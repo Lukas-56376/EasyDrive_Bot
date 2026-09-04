@@ -439,7 +439,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
             .setDescription(
               `Hallo <@${member.id}>!\n\nWillkommen in unserer Fahrschule. Bitte lies die wichtigen Channels und verifiziere dich.\n\nViel Erfolg!`
             )
-            .setColor(0x6408527),
+            .setColor(0x640527),
         ],
       });
     } catch {}
@@ -3037,12 +3037,10 @@ function playMusic(
       resource
     );
 
-    console.log(
-      '[Voice] play() aufgerufen – Status:',
-      player.state.status,
-      'Resource:',
-      resource.state.status
-    );
+   console.log(
+   '[Voice] play() aufgerufen – Player-Status:',
+   player.state.status
+);
 
   } catch (err) {
     console.error(
