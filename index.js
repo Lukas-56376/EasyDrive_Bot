@@ -1175,13 +1175,25 @@ async function joinAndPlayMusic(channel) {
     connection.on('error', (err) => console.error('[Voice] connection error:', err));
 
     const player = createAudioPlayer({
-      behaviors: { noSubscriber: NoSubscriberBehavior.Play },
-    });
-    connection.subscribe(player);
+  behaviors: { noSubscriber: NoSubscriberBehavior.Play },
+});
 
-    // Sofort registrieren, damit parallele Aufrufe keine zweite Verbindung starten
-    voiceConnections.set(channel.id, { connection, player });
+const subscription = connection.subscribe(player);
 
+console.log('[Voice] Player subscribed:', !!subscription);
+
+if (!subscription) {
+  console.error('[Voice] ❌ Player konnte nicht subscribed werden!');
+} else {
+  console.log('[Voice] ✅ Player erfolgreich subscribed!');
+}
+
+player.on('error', (error) => {
+  console.error('[Voice] ❌ AudioPlayer ERROR:', error);
+});
+
+// Sofort registrieren, damit parallele Aufrufe keine zweite Verbindung starten
+voiceConnections.set(channel.id, { connection, player });
     try {
       await entersState(connection, VoiceConnectionStatus.Ready, 25_000);
       console.log('[Voice] Connection READY');
