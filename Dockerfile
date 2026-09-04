@@ -1,10 +1,14 @@
-FROM node:20-bookworm-slim
-
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
-  && rm -rf /var/lib/apt/lists/*
+FROM node:22.12.0-bookworm-slim
 
 WORKDIR /app
-COPY package.json ./
-RUN npm install --omit=dev
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY package*.json ./
+RUN npm ci
+
 COPY . .
-CMD ["node", "index.js"]
+
+CMD ["npm", "start"]

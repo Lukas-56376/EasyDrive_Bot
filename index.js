@@ -1,4 +1,24 @@
-require('dotenv').config();
+let ffmpegPath = null;
+
+if (process.platform === 'linux' && fs.existsSync('/usr/bin/ffmpeg')) {
+  ffmpegPath = '/usr/bin/ffmpeg';
+} else {
+  try {
+    ffmpegPath = require('ffmpeg-static');
+  } catch (_) {}
+}
+
+if (ffmpegPath) {
+  process.env.FFMPEG_PATH = ffmpegPath;
+
+  const delimiter = process.platform === 'win32' ? ';' : ':';
+  process.env.PATH =
+    path.dirname(ffmpegPath) +
+    delimiter +
+    (process.env.PATH || '');
+
+  console.log(`[Voice] FFmpeg: ${ffmpegPath}`);
+}require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
 
