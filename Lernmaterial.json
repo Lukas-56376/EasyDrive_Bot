@@ -1,0 +1,28 @@
+{
+  "embeds": [
+    {
+      "title": "📖 EasyDrive Berlin – Lernmaterial Übersicht",
+      "color": 6602202,
+      "description": "Hier findest du das **Lernmaterial für alle Führerscheintypen**.\n\nWähle deinen Typ aus und lies das zugehörige Material gründlich durch.\nOhne bestandene Theorie gibt es keine Praxis!\n\n**Verfügbare Führerscheine:**\n• PKW (Klasse B)\n• Motorrad (Klasse A)\n• LKW (Klasse C)\n\nScroll nach unten zu deinem Typ."
+    },
+    {
+      "title": "🚗 Lernmaterial – PKW (Klasse B)",
+      "color": 6602202,
+      "description": "**Theorie für den PKW-Führerschein**\n\n**1. Grundregeln**\n• Rechts vor Links gilt, wenn nichts anderes geregelt ist\n• Im Kreisverkehr hat der Verkehr im Kreis Vorfahrt\n• Bei Unübersichtlichkeit immer bremsbereit fahren\n• Sicherheitsabstand: mindestens 2 Sekunden zum Vordermann\n\n**2. Verkehrszeichen (wichtigste)**\n• Stoppschild → vollständiger Halt\n• Vorfahrt gewähren → andere zuerst\n• Geschwindigkeitsbegrenzungen strikt einhalten\n• Überholverbot beachten\n\n**3. Vorfahrt & Kreuzungen**\n• Wer von rechts kommt, hat Vorfahrt\n• Abbiegen: Blinker setzen, in die richtige Spur einordnen\n• Fußgängerüberwege: Fußgänger haben Vorrang\n\n**4. Besonderheiten PKW**\n• Anschnallpflicht für alle Insassen\n• Handyverbot während der Fahrt\n• Bei Dunkelheit Licht einschalten\n• Parken nur dort, wo es erlaubt ist\n\n**5. Prüfungstipps**\nLerne die Schilder und Vorfahrtsregeln auswendig. Das Team testet dich darauf, bevor du in die Praxis darfst."
+    },
+    {
+      "title": "🏍️ Lernmaterial – Motorrad (Klasse A)",
+      "color": 6602202,
+      "description": "**Theorie für den Motorrad-Führerschein**\n\n**1. Grundregeln**\n• Gleiche Verkehrsregeln wie beim PKW\n• Zusätzlich: immer Schutzkleidung tragen (Helm Pflicht!)\n• Besonders aufmerksam fahren – Motorräder sind schlechter sichtbar\n\n**2. Spezielle Motorrad-Regeln**\n• Helm muss immer korrekt getragen werden\n• Keine zusätzlichen Personen ohne entsprechenden Führerschein\n• Bei Nässe und Kälte besonders vorsichtig fahren\n• Kurven: Blickführung und Schräglage beachten\n\n**3. Vorfahrt & Verhalten**\n• Rechts vor Links gilt genauso\n• Im toten Winkel von Autos besonders vorsichtig sein\n• Überholen nur mit ausreichend Abstand und Übersicht\n\n**4. Wichtige Schilder & Situationen**\n• Geschwindigkeitsbegrenzungen strikt einhalten\n• Bei Gefahrenzeichen Tempo reduzieren\n• Autobahn: Links fahren, Rechts überholen\n\n**5. Prüfungstipps**\nNeben den normalen Regeln wird besonders auf Helmpflicht, Sichtbarkeit und defensive Fahrweise geachtet."
+    },
+    {
+      "title": "🚛 Lernmaterial – LKW (Klasse C)",
+      "color": 6602202,
+      "description": "**Theorie für den LKW-Führerschein**\n\n**1. Grundregeln**\n• Alle normalen Verkehrsregeln gelten auch für LKW\n• Zusätzlich: deutlich längerer Bremsweg und größerer Wendekreis\n• Immer vorausschauend und defensiv fahren\n\n**2. Spezielle LKW-Regeln**\n• Größerer Sicherheitsabstand nötig (mindestens 50 m auf Landstraßen)\n• In engen Straßen und bei Abbiegungen besonders vorsichtig\n• Totwinkel sind viel größer – Spiegel richtig einstellen\n• Höhe und Breite des Fahrzeugs immer beachten\n\n**3. Vorfahrt & schwierige Situationen**\n• Bei engen Straßen Rücksicht auf kleinere Fahrzeuge nehmen\n• An Steigungen und Gefällen Geschwindigkeit anpassen\n• Beim Rückwärtsfahren Einweiser nutzen, wenn möglich\n\n**4. Wichtige Hinweise**\n• Ruhezeiten und Lenkzeiten beachten (auch In-Game)\n• Ladung muss gesichert sein\n• Bei schlechter Sicht oder Wetter Tempo stark reduzieren\n\n**5. Prüfungstipps**\nDas Team achtet besonders auf vorausschauendes Fahren, Abstand und das richtige Einschätzen der Fahrzeuggröße."
+    }
+  ],
+  "attachments": [],
+  "allowed_mentions": {
+    "parse": []
+  }
+}
