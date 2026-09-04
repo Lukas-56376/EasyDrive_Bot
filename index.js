@@ -1,32 +1,44 @@
 // ==================== VOICE ====================
+
 client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
   const supportId = config.CHANNELS.SUPPORT_WARTERAUM;
 
-  // Eigene Voice-State-Änderungen des Bots ignorieren
   if (newState.member?.user?.bot) return;
 
-  // Jemand joined Support Warteraum
-  if (newState.channelId === supportId && oldState.channelId !== supportId) {
-    console.log(`[Voice] ${newState.member?.user?.tag} joined Support Warteraum`);
-
-    setTimeout(
-      () =>
-        joinAndPlayMusic(
-          newState.guild.channels.cache.get(supportId) || newState.channel
-        ),
-      800
+  if (
+    newState.channelId === supportId &&
+    oldState.channelId !== supportId
+  ) {
+    console.log(
+      `[Voice] ${newState.member?.user?.tag} joined Support Warteraum`
     );
+
+    setTimeout(() => {
+      const channel =
+        newState.guild.channels.cache.get(supportId) ||
+        newState.channel;
+
+      joinAndPlayMusic(channel);
+    }, 800);
   }
 
-  // Jemand left
-  if (oldState.channelId === supportId && newState.channelId !== supportId) {
+  if (
+    oldState.channelId === supportId &&
+    newState.channelId !== supportId
+  ) {
     setTimeout(() => {
-      const channel = oldState.guild.channels.cache.get(supportId);
+      const channel =
+        oldState.guild.channels.cache.get(supportId);
+
       if (!channel) return;
 
-      const humans = channel.members.filter((m) => !m.user.bot).size;
+      const humans = channel.members.filter(
+        (m) => !m.user.bot
+      ).size;
 
-      console.log(`[Voice] left, humans remaining: ${humans}`);
+      console.log(
+        `[Voice] left, humans remaining: ${humans}`
+      );
 
       if (humans === 0) {
         leaveVoice(supportId);
@@ -36,20 +48,25 @@ client.on(Events.VoiceStateUpdate, async (oldState, newState) => {
 });
 
 async function joinAndPlayMusic(channel) {
-  if (!channel || channel.id !== config.CHANNELS.SUPPORT_WARTERAUM) return;
+  if (
+    !channel ||
+    channel.id !== config.CHANNELS.SUPPORT_WARTERAUM
+  ) {
+    return;
+  }
 
-  // Schon drin?
   if (voiceConnections.has(channel.id)) {
     const existing = voiceConnections.get(channel.id);
-    const status = existing.connection.state.status;
 
     console.log(
-      `[Voice] already connected, status=${status}, player=${existing.player.state.status}`
+      `[Voice] already connected, status=${existing.connection.state.status}, player=${existing.player.state.status}`
     );
 
     if (
-      status === VoiceConnectionStatus.Ready &&
-      existing.player.state.status !== AudioPlayerStatus.Playing
+      existing.connection.state.status ===
+        VoiceConnectionStatus.Ready &&
+      existing.player.state.status !==
+        AudioPlayerStatus.Playing
     ) {
       playMusic(existing.player);
     }
@@ -57,10 +74,13 @@ async function joinAndPlayMusic(channel) {
     return;
   }
 
-  const musicPath = path.join(__dirname, 'music.mp3');
+  const musicPath = path.join(__dirname, "music.mp3");
 
   if (!fs.existsSync(musicPath)) {
-    console.error('[Voice] music.mp3 FEHLT:', musicPath);
+    console.error(
+      "[Voice] music.mp3 FEHLT:",
+      musicPath
+    );
     return;
   }
 
@@ -74,30 +94,37 @@ async function joinAndPlayMusic(channel) {
     const connection = joinVoiceChannel({
       channelId: channel.id,
       guildId: channel.guild.id,
-      adapterCreator: channel.guild.voiceAdapterCreator,
+      adapterCreator:
+        channel.guild.voiceAdapterCreator,
       selfDeaf: true,
       selfMute: false,
     });
 
-    connection.on('stateChange', (oldS, newS) => {
-      console.log(
-        `[Voice] connection: ${oldS.status} → ${newS.status}`
-      );
-    });
+    connection.on(
+      "stateChange",
+      (oldState, newState) => {
+        console.log(
+          `[Voice] connection: ${oldState.status} → ${newState.status}`
+        );
+      }
+    );
 
-    connection.on('error', (err) => {
-      console.error('[Voice] connection error:', err);
+    connection.on("error", (error) => {
+      console.error(
+        "[Voice] connection error:",
+        error
+      );
     });
 
     const player = createAudioPlayer({
       behaviors: {
-        noSubscriber: NoSubscriberBehavior.Play,
+        noSubscriber:
+          NoSubscriberBehavior.Play,
       },
     });
 
     connection.subscribe(player);
 
-    // Sofort registrieren
     voiceConnections.set(channel.id, {
       connection,
       player,
@@ -107,14 +134,16 @@ async function joinAndPlayMusic(channel) {
       await entersState(
         connection,
         VoiceConnectionStatus.Ready,
-        25_000
+        25000
       );
 
-      console.log('[Voice] Connection READY');
-    } catch (err) {
+      console.log(
+        "[Voice] Connection READY"
+      );
+    } catch (error) {
       console.error(
-        '[Voice] Timeout waiting for Ready:',
-        err.message
+        "[Voice] Timeout waiting for Ready:",
+        error.message
       );
 
       voiceConnections.delete(channel.id);
@@ -126,33 +155,44 @@ async function joinAndPlayMusic(channel) {
       return;
     }
 
-    player.on('stateChange', (oldS, newS) => {
-      console.log(
-        `[Voice] player: ${oldS.status} → ${newS.status}`
+    player.on(
+      "stateChange",
+      (oldState, newState) => {
+        console.log(
+          `[Voice] player: ${oldState.status} → ${newState.status}`
+        );
+      }
+    );
+
+    player.on(
+      AudioPlayerStatus.Idle,
+      () => {
+        console.log(
+          "[Voice] Musik beendet → Loop"
+        );
+
+        setTimeout(() => {
+          if (
+            voiceConnections.has(channel.id)
+          ) {
+            playMusic(player);
+          }
+        }, 500);
+      }
+    );
+
+    player.on("error", (error) => {
+      console.error(
+        "[Voice] player error:",
+        error
       );
-    });
-
-    player.on(AudioPlayerStatus.Idle, () => {
-      console.log('[Voice] Idle → loop');
-
-      setTimeout(() => {
-        playMusic(player);
-      }, 300);
-    });
-
-    player.on('error', (err) => {
-      console.error('[Voice] player error:', err);
-
-      setTimeout(() => {
-        playMusic(player);
-      }, 2000);
     });
 
     connection.on(
       VoiceConnectionStatus.Disconnected,
       async () => {
         console.log(
-          '[Voice] Disconnected – versuche Reconnect…'
+          "[Voice] Disconnected – Reconnect..."
         );
 
         try {
@@ -160,29 +200,33 @@ async function joinAndPlayMusic(channel) {
             entersState(
               connection,
               VoiceConnectionStatus.Signalling,
-              5_000
+              5000
             ),
             entersState(
               connection,
               VoiceConnectionStatus.Connecting,
-              5_000
+              5000
             ),
           ]);
         } catch {
-          const ch =
-            channel.guild.channels.cache.get(channel.id);
+          const currentChannel =
+            channel.guild.channels.cache.get(
+              channel.id
+            );
 
-          const humans = ch
-            ? ch.members.filter((m) => !m.user.bot).size
+          const humans = currentChannel
+            ? currentChannel.members.filter(
+                (member) => !member.user.bot
+              ).size
             : 0;
 
-          if (humans === 0) {
-            leaveVoice(channel.id);
-          } else {
-            leaveVoice(channel.id);
+          leaveVoice(channel.id);
 
+          if (humans > 0) {
             setTimeout(() => {
-              joinAndPlayMusic(ch);
+              joinAndPlayMusic(
+                currentChannel
+              );
             }, 2000);
           }
         }
@@ -190,59 +234,69 @@ async function joinAndPlayMusic(channel) {
     );
 
     playMusic(player);
-  } catch (err) {
+  } catch (error) {
     console.error(
-      '[Voice] joinAndPlayMusic error:',
-      err
+      "[Voice] joinAndPlayMusic error:",
+      error
     );
   }
 }
 
 function playMusic(player) {
-  const musicPath = path.join(__dirname, 'music.mp3');
+  const musicPath = path.join(
+    __dirname,
+    "music.mp3"
+  );
 
   if (!fs.existsSync(musicPath)) {
-    console.warn(
-      '[Voice] music.mp3 fehlt unter:',
+    console.error(
+      "[Voice] music.mp3 nicht gefunden:",
       musicPath
     );
     return;
   }
 
   try {
-    const resource = createAudioResource(musicPath, {
-      inputType: StreamType.Arbitrary,
-      inlineVolume: true,
-      silencePaddingFrames: 5,
-    });
+    const resource = createAudioResource(
+      musicPath,
+      {
+        inputType: StreamType.Arbitrary,
+        inlineVolume: true,
+        silencePaddingFrames: 5,
+      }
+    );
 
     if (resource.volume) {
       resource.volume.setVolume(0.45);
     }
 
-    resource.playStream.on('error', (err) => {
-      console.error(
-        '[Voice] Audio stream error:',
-        err
-      );
-    });
+    resource.playStream.on(
+      "error",
+      (error) => {
+        console.error(
+          "[Voice] Audio stream error:",
+          error
+        );
+      }
+    );
 
     player.play(resource);
 
     console.log(
-      '[Voice] play() aufgerufen – Status:',
+      "[Voice] play() aufgerufen – Status:",
       player.state.status
     );
-  } catch (err) {
+  } catch (error) {
     console.error(
-      '[Voice] playMusic error:',
-      err
+      "[Voice] playMusic error:",
+      error
     );
   }
 }
 
 function leaveVoice(channelId) {
-  const entry = voiceConnections.get(channelId);
+  const entry =
+    voiceConnections.get(channelId);
 
   if (!entry) return;
 
@@ -254,6 +308,6 @@ function leaveVoice(channelId) {
   voiceConnections.delete(channelId);
 
   console.log(
-    '[Voice] Left Support Warteraum'
+    "[Voice] Left Support Warteraum"
   );
 }
