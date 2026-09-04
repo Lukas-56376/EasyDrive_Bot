@@ -1,36 +1,31 @@
-let ffmpegPath = null;
-
-if (process.platform === 'linux' && fs.existsSync('/usr/bin/ffmpeg')) {
-  ffmpegPath = '/usr/bin/ffmpeg';
-} else {
-  try {
-    ffmpegPath = require('ffmpeg-static');
-  } catch (_) {}
-}
-
-if (ffmpegPath) {
-  process.env.FFMPEG_PATH = ffmpegPath;
-
-  const delimiter = process.platform === 'win32' ? ';' : ':';
-  process.env.PATH =
-    path.dirname(ffmpegPath) +
-    delimiter +
-    (process.env.PATH || '');
-
-  console.log(`[Voice] FFmpeg: ${ffmpegPath}`);
-}require('dotenv').config();
+require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
 
 // FFmpeg für Voice
 let ffmpegPath = null;
+
 try {
-  ffmpegPath = require('ffmpeg-static');
+  if (process.platform === 'linux' && fs.existsSync('/usr/bin/ffmpeg')) {
+    ffmpegPath = '/usr/bin/ffmpeg';
+  } else {
+    ffmpegPath = require('ffmpeg-static');
+  }
+
   if (ffmpegPath) {
     process.env.FFMPEG_PATH = ffmpegPath;
-    process.env.PATH = path.dirname(ffmpegPath) + (process.platform === 'win32' ? ';' : ':') + (process.env.PATH || '');
+
+    const delimiter = process.platform === 'win32' ? ';' : ':';
+    process.env.PATH =
+      path.dirname(ffmpegPath) +
+      delimiter +
+      (process.env.PATH || '');
+
+    console.log(`[Voice] FFmpeg: ${ffmpegPath}`);
   }
-} catch (_) {}
+} catch (error) {
+  console.error('[Voice] FFmpeg konnte nicht geladen werden:', error);
+}
 
 const {
   Client,
