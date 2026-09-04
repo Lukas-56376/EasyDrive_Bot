@@ -4,14 +4,28 @@ const fs = require('fs');
 
 // FFmpeg für Voice
 let ffmpegPath = null;
+
 try {
-  ffmpegPath = require('ffmpeg-static');
+  if (process.platform === 'linux' && require('fs').existsSync('/usr/bin/ffmpeg')) {
+    // Railway / Linux
+    ffmpegPath = '/usr/bin/ffmpeg';
+  } else {
+    // macOS / Windows lokal
+    ffmpegPath = require('ffmpeg-static');
+  }
+
   if (ffmpegPath) {
     process.env.FFMPEG_PATH = ffmpegPath;
-    process.env.PATH = path.dirname(ffmpegPath) + (process.platform === 'win32' ? ';' : ':') + (process.env.PATH || '');
-  }
-} catch (_) {}
 
+    const delimiter = process.platform === 'win32' ? ';' : ':';
+    process.env.PATH =
+      path.dirname(ffmpegPath) + delimiter + (process.env.PATH || '');
+
+    console.log(`[Voice] FFmpeg: ${ffmpegPath}`);
+  }
+} catch (error) {
+  console.error('[Voice] FFmpeg konnte nicht geladen werden:', error);
+}
 const {
   Client,
   GatewayIntentBits,
