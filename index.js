@@ -69,10 +69,12 @@ let lavalinkReady = false;
 
 const LAVALINK_NODES = [
   {
-    name: process.env.LAVALINK_NAME || 'Serenetia-SSL',
-    url: process.env.LAVALINK_HOST || 'lavalinkv4.serenetia.com:443',
+    name: process.env.LAVALINK_NAME || 'Serenetia-NoSSL',
+    url: process.env.LAVALINK_HOST || 'lavalinkv4.serenetia.com:80',
     auth: process.env.LAVALINK_PASSWORD || 'https://seretia.link/discord',
-    secure: true,
+    secure: process.env.LAVALINK_SECURE
+      ? process.env.LAVALINK_SECURE === 'true'
+      : false,
   },
   {
     // Fallback: Der primäre Free-Node liefert regelmäßig 429 bzw. kappt die
