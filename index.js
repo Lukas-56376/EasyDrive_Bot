@@ -79,11 +79,6 @@ const LAVALINK_MUSIC_URL = process.env.LAVALINK_MUSIC_URL || '';
 async function initLavalink() {
   if (shoukaku) return;
 
-  if (!client.user?.id) {
-    console.error('[Lavalink] ❌ Bot-ID noch nicht verfügbar – Initialisierung abgebrochen.');
-    return;
-  }
-
   try {
     const { Shoukaku, Connectors } = await import('shoukaku');
 
@@ -107,8 +102,8 @@ async function initLavalink() {
     // Ohne diese beiden Listener bleibt ein fehlschlagender Handshake
     // komplett unsichtbar in der Console (Shoukaku loggt intern nur über
     // 'debug'/'reconnecting', auf die vorher niemand gehört hat).
-    shoukaku.on('debug', (message) => {
-      console.log(`[Lavalink debug] ${message}`);
+    shoukaku.on('debug', (name, message) => {
+      console.log(`[Lavalink debug] (${name}) ${message}`);
     });
 
     shoukaku.on('reconnecting', (name, triesLeft, interval) => {
@@ -154,7 +149,7 @@ async function initLavalink() {
     });
 
     console.log(
-      `[Lavalink] Verbinde SSL zu ${LAVALINK_NODE.url} als Bot ${client.user.id}`
+      `[Lavalink] Verbinde SSL zu ${LAVALINK_NODE.url} (Handshake erfolgt sobald Discord-Login abgeschlossen ist)`
     );
   } catch (error) {
     console.error('[Lavalink] ❌ Initialisierung fehlgeschlagen:', error);
@@ -207,10 +202,6 @@ const EMBED_MAP = {
 
 client.once(Events.ClientReady, async (c) => {
   console.log(`✅ Eingeloggt als ${c.user.tag}`);
-
-  // Lavalink erst nach dem Discord-Login starten.
-  // Shoukaku benötigt die Bot-ID für den User-Id-Header des Lavalink-WebSocket-Handshakes.
-  await initLavalink();
 
   await setupEmbedChannel();
   await setupVerificationChannel();
@@ -2904,7 +2895,17 @@ process.on(
     )
 );
 
-client.login(process.env.DISCORD_TOKEN).catch((error) => {
-  console.error('[Discord] ❌ Login fehlgeschlagen:', error);
-  process.exit(1);
-});
+// WICHTIG: initLavalink() muss VOR client.login() aufgerufen werden.
+// Shoukakus DiscordJS-Connector registriert intern ein client.once('clientReady', ...),
+// um Node-Verbindungen aufzubauen. Der Bot-Ready-Handler oben lief bisher NACH diesem
+// Event – Shoukakus once-Listener wurde also erst angehängt, nachdem 'clientReady'
+// längst gefeuert war, und hat NIE ausgelöst. Dadurch wurde node.connect() nie
+// aufgerufen und lavalinkReady blieb für immer false, ganz ohne Fehler oder Log-Ausgabe.
+(async () => {
+  await initLavalink();
+
+  client.login(process.env.DISCORD_TOKEN).catch((error) => {
+    console.error('[Discord] ❌ Login fehlgeschlagen:', error);
+    process.exit(1);
+  });
+})();
