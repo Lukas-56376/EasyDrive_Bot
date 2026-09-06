@@ -77,6 +77,13 @@ const LAVALINK_NODE = {
 const LAVALINK_MUSIC_URL = process.env.LAVALINK_MUSIC_URL || '';
 
 async function initLavalink() {
+  if (shoukaku) return;
+
+  if (!client.user?.id) {
+    console.error('[Lavalink] ❌ Bot-ID noch nicht verfügbar – Initialisierung abgebrochen.');
+    return;
+  }
+
   try {
     const { Shoukaku, Connectors } = await import('shoukaku');
 
@@ -84,12 +91,14 @@ async function initLavalink() {
       new Connectors.DiscordJS(client),
       [LAVALINK_NODE],
       {
+        // Öffentliche Nodes können bei zu vielen Handshakes 429 liefern.
+        // Deshalb langsam und begrenzt reconnecten statt in einer Schleife zu hämmern.
         resume: true,
         resumeByLibrary: true,
-        resumeTimeout: 30,
-        reconnectTries: 10,
-        reconnectInterval: 5,
-        voiceConnectionTimeout: 15,
+        resumeTimeout: 60,
+        reconnectTries: 3,
+        reconnectInterval: 60,
+        voiceConnectionTimeout: 20,
         moveOnDisconnect: true,
       }
     );
@@ -102,7 +111,16 @@ async function initLavalink() {
     });
 
     shoukaku.on('error', (name, error) => {
-      console.error(`[Lavalink] ❌ Node-Fehler (${name}):`, error?.message || error);
+      const message = error?.message || String(error);
+
+      if (message.includes('429')) {
+        console.warn(
+          `[Lavalink] ⚠️ ${name} antwortet mit HTTP 429 (Rate Limit). ` +
+          'Shoukaku wartet vor dem nächsten Verbindungsversuch.'
+        );
+      } else {
+        console.error(`[Lavalink] ❌ Node-Fehler (${name}): ${message}`);
+      }
     });
 
     shoukaku.on('close', (name, code, reason) => {
@@ -118,10 +136,11 @@ async function initLavalink() {
     });
 
     console.log(
-      `[Lavalink] Verbinde SSL zu ${LAVALINK_NODE.url}`
+      `[Lavalink] Verbinde SSL zu ${LAVALINK_NODE.url} als Bot ${client.user.id}`
     );
   } catch (error) {
     console.error('[Lavalink] ❌ Initialisierung fehlgeschlagen:', error);
+    shoukaku = null;
   }
 }
 
@@ -170,6 +189,10 @@ const EMBED_MAP = {
 
 client.once(Events.ClientReady, async (c) => {
   console.log(`✅ Eingeloggt als ${c.user.tag}`);
+
+  // Lavalink erst nach dem Discord-Login starten.
+  // Shoukaku benötigt die Bot-ID für den User-Id-Header des Lavalink-WebSocket-Handshakes.
+  await initLavalink();
 
   await setupEmbedChannel();
   await setupVerificationChannel();
@@ -2844,6 +2867,7 @@ process.on(
     )
 );
 
-initLavalink().finally(() => {
-  client.login(process.env.DISCORD_TOKEN);
+client.login(process.env.DISCORD_TOKEN).catch((error) => {
+  console.error('[Discord] ❌ Login fehlgeschlagen:', error);
+  process.exit(1);
 });
