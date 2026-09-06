@@ -92,22 +92,40 @@ async function initLavalink() {
       [LAVALINK_NODE],
       {
         // Öffentliche Nodes können bei zu vielen Handshakes 429 liefern.
-        // Deshalb langsam und begrenzt reconnecten statt in einer Schleife zu hämmern.
+        // Deshalb begrenzt reconnecten statt in einer Schleife zu hämmern,
+        // aber kurz genug, damit Fehlschläge nicht minutenlang unsichtbar bleiben.
         resume: true,
         resumeByLibrary: true,
         resumeTimeout: 60,
         reconnectTries: 3,
-        reconnectInterval: 60,
+        reconnectInterval: 15,
         voiceConnectionTimeout: 20,
         moveOnDisconnect: true,
       }
     );
+
+    // Ohne diese beiden Listener bleibt ein fehlschlagender Handshake
+    // komplett unsichtbar in der Console (Shoukaku loggt intern nur über
+    // 'debug'/'reconnecting', auf die vorher niemand gehört hat).
+    shoukaku.on('debug', (message) => {
+      console.log(`[Lavalink debug] ${message}`);
+    });
+
+    shoukaku.on('reconnecting', (name, triesLeft, interval) => {
+      console.warn(
+        `[Lavalink] ⏳ ${name}: Verbindung fehlgeschlagen, Reconnect in ${interval}s (${triesLeft} Versuche übrig)`
+      );
+    });
 
     shoukaku.on('ready', (name, info) => {
       lavalinkReady = true;
       console.log(
         `[Lavalink] ✅ Node bereit: ${name} (Session ${info.sessionId})`
       );
+
+      // Falls schon jemand im Support-Warteraum war, bevor Lavalink ready wurde,
+      // wurde der Join-Versuch vorher stillschweigend übersprungen. Hier nachholen.
+      retryPendingSupportVoiceJoin();
     });
 
     shoukaku.on('error', (name, error) => {
@@ -2719,6 +2737,25 @@ client.on(
     }
   }
 );
+
+// Wird beim 'ready'-Event von Shoukaku aufgerufen. Prüft, ob gerade schon
+// jemand im Support-Warteraum sitzt, dessen Join zuvor mangels bereiter
+// Lavalink-Verbindung stillschweigend übersprungen wurde, und holt das nach.
+function retryPendingSupportVoiceJoin() {
+  const guild = client.guilds.cache.get(config.GUILD_ID);
+  const channel = guild?.channels.cache.get(config.CHANNELS.SUPPORT_WARTERAUM);
+
+  if (!channel) return;
+
+  const humans = channel.members.filter((m) => !m.user.bot).size;
+
+  if (humans > 0) {
+    console.log(
+      `[Lavalink] Node ist ready, ${humans} Person(en) bereits im Support-Warteraum – hole Voice-Join nach.`
+    );
+    joinAndPlayMusic(channel);
+  }
+}
 
 async function joinAndPlayMusic(channel) {
   if (!channel || channel.id !== config.CHANNELS.SUPPORT_WARTERAUM) {
