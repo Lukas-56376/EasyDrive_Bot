@@ -16,7 +16,7 @@ Vollständiger Discord-Bot für die EasyDrive Berlin Fahrschule (Roblox).
    - Annehmen → Praxis, Theorie weg + DM
 6. **Fahrstunden** – Anträge nur mit Praxis-Rolle, Fahrlehrer übernimmt, Stunden bestätigen  
    - Bei 30 Stunden → Erwartet Prüfung + DM
-7. **Support Warteraum** – Bot joint automatisch über Lavalink v4 SSL und spielt die konfigurierte Musik-URL in Loop, bis der Channel leer ist
+7. **Support Warteraum** – Bot joint automatisch und spielt `music.mp3` in Loop, bis der Channel leer ist
 
 ## Installation
 
@@ -50,7 +50,7 @@ https://discord.com/api/oauth2/authorize?client_id=DEINE_CLIENT_ID&permissions=8
 
 - `config.js` – Alle Role- & Channel-IDs
 - `Willkommen.json`, `Regelwerk.json`, `faq.json`, `theorie.json`, `Lernmaterial.json`, `Praxis-Info.json` – Embeds
-- `music.mp3` – Musikdatei; für Lavalink muss sie über eine direkte HTTPS-URL erreichbar sein
+- `music.mp3` – Loop-Musik für Support Warteraum
 - `data/` – Persistente Daten (Stunden, Anfragen, Embed-Message-IDs)
 
 ## Hinweise
@@ -59,9 +59,3 @@ https://discord.com/api/oauth2/authorize?client_id=DEINE_CLIENT_ID&permissions=8
 - Theorie-Fragen sind in `utils/theoryQuestions.js` und können angepasst werden.
 - Der Bot speichert Daten lokal in JSON-Dateien unter `data/`.
 # EasyDrive_Bot
-
-## Lavalink
-
-Der Bot verwendet Lavalink v4 über eine sichere WebSocket-Verbindung (`wss`). Die Node-Daten stehen in `.env`; eine aktuelle Liste von SSL-Nodes gibt es bei der Lavalink-Hosting-Liste. Die Musikdatei muss für den Lavalink-Server als direkte HTTPS-URL erreichbar sein, weil die Datei nicht vom Bot-Prozess selbst an Lavalink gestreamt wird.
-
-`LAVALINK_MUSIC_URL` kann deshalb auf eine eigene öffentliche HTTPS-Datei gesetzt werden.

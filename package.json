@@ -7,9 +7,9 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "@snazzah/davey": "^0.1.12",
     "discord.js": "^14.27.0",
     "dotenv": "^16.4.5",
+    "@snazzah/davey": "^0.1.12",
     "shoukaku": "^4.3.0"
   },
   "engines": {

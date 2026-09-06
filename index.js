@@ -18,13 +18,6 @@ const {
   EmbedBuilder,
 } = require('discord.js');
 
-// Lavalink wird über Shoukaku (Lavalink v4) angebunden.
-let shoukaku = null;
-let shoukakuReady = false;
-let Shoukaku = null;
-let Connectors = null;
-
-
 // DAVE (E2EE)
 try {
   require('@snazzah/davey');
@@ -69,10 +62,70 @@ const client = new Client({
   ],
 });
 
+// ==================== LAVALINK / SHOUKAKU ====================
+
+let shoukaku = null;
+let lavalinkReady = false;
+
+const LAVALINK_NODE = {
+  name: process.env.LAVALINK_NAME || 'Serenetia-SSL',
+  url: process.env.LAVALINK_HOST || 'lavalinkv4.serenetia.com:443',
+  auth: process.env.LAVALINK_PASSWORD || 'https://seretia.link/discord',
+  secure: true,
+};
+
+const LAVALINK_MUSIC_URL = process.env.LAVALINK_MUSIC_URL || '';
+
+async function initLavalink() {
+  try {
+    const { Shoukaku, Connectors } = await import('shoukaku');
+
+    shoukaku = new Shoukaku(
+      new Connectors.DiscordJS(client),
+      [LAVALINK_NODE],
+      {
+        resume: true,
+        resumeByLibrary: true,
+        resumeTimeout: 30,
+        reconnectTries: 10,
+        reconnectInterval: 5,
+        voiceConnectionTimeout: 15,
+        moveOnDisconnect: true,
+      }
+    );
+
+    shoukaku.on('ready', (name, info) => {
+      lavalinkReady = true;
+      console.log(
+        `[Lavalink] ✅ Node bereit: ${name} (Session ${info.sessionId})`
+      );
+    });
+
+    shoukaku.on('error', (name, error) => {
+      console.error(`[Lavalink] ❌ Node-Fehler (${name}):`, error?.message || error);
+    });
+
+    shoukaku.on('close', (name, code, reason) => {
+      lavalinkReady = false;
+      console.warn(
+        `[Lavalink] Verbindung geschlossen (${name}) code=${code} reason=${reason || 'unbekannt'}`
+      );
+    });
+
+    shoukaku.on('disconnect', (name, count) => {
+      lavalinkReady = false;
+      console.warn(`[Lavalink] Node getrennt: ${name} (Reconnects: ${count})`);
+    });
+
+    console.log(
+      `[Lavalink] Verbinde SSL zu ${LAVALINK_NODE.url}`
+    );
+  } catch (error) {
+    console.error('[Lavalink] ❌ Initialisierung fehlgeschlagen:', error);
+  }
+}
+
 const voiceConnections = new Map();
-const LAVALINK_MUSIC_URL =
-  process.env.LAVALINK_MUSIC_URL ||
-  'https://raw.githubusercontent.com/Lukas-56376/EasyDrive_Bot/main/music.mp3';
 const pendingTheoryTimeouts = new Map();
 const pendingEmbedEdit = new Map();
 
@@ -118,8 +171,6 @@ const EMBED_MAP = {
 client.once(Events.ClientReady, async (c) => {
   console.log(`✅ Eingeloggt als ${c.user.tag}`);
 
-  await initLavalink();
-
   await setupEmbedChannel();
   await setupVerificationChannel();
   await setupAnmeldenChannel();
@@ -129,90 +180,6 @@ client.once(Events.ClientReady, async (c) => {
 
   console.log('🚀 Bot ist bereit!');
 });
-
-// ==================== LAVALINK ====================
-
-async function initLavalink() {
-  try {
-    ({ Shoukaku, Connectors } = await import('shoukaku'));
-
-    const host = process.env.LAVALINK_HOST || 'lavalink.jirayu.net';
-    const port = Number(process.env.LAVALINK_PORT || 443);
-    const password =
-      process.env.LAVALINK_PASSWORD || 'youshallnotpass';
-    const secure =
-      String(process.env.LAVALINK_SECURE ?? 'true').toLowerCase() === 'true';
-
-    shoukaku = new Shoukaku(
-      new Connectors.DiscordJS(client),
-      [
-        {
-          name: process.env.LAVALINK_NAME || 'PublicSSL',
-          url: `${host}:${port}`,
-          auth: password,
-          secure,
-        },
-      ],
-      {
-        resume: true,
-        resumeTimeout: 30,
-        reconnectTries: 10,
-        reconnectInterval: 5,
-      }
-    );
-
-    shoukaku.on('ready', (name) => {
-      shoukakuReady = true;
-      console.log(`[Lavalink] ✅ Node bereit: ${name}`);
-    });
-
-    shoukaku.on('error', (name, error) => {
-      console.error(`[Lavalink] ❌ ${name}:`, error);
-    });
-
-    shoukaku.on('reconnecting', (name, triesLeft, triesMade) => {
-      console.warn(
-        `[Lavalink] 🔄 ${name}: Reconnect ${triesMade}, noch ${triesLeft}`
-      );
-    });
-
-    shoukaku.on('disconnect', (name, code) => {
-      console.warn(`[Lavalink] ⚠️ ${name} getrennt (Code ${code})`);
-      shoukakuReady = false;
-    });
-
-    shoukaku.on('close', (name, code, reason) => {
-      console.warn(
-        `[Lavalink] ⚠️ ${name} geschlossen (Code ${code}): ${reason}`
-      );
-      shoukakuReady = false;
-    });
-
-    console.log(
-      `[Lavalink] Verbinde mit ${secure ? 'wss' : 'ws'}://${host}:${port}/v4/websocket`
-    );
-
-    await new Promise((resolve, reject) => {
-      if (shoukakuReady) return resolve();
-
-      const timeout = setTimeout(() => {
-        reject(new Error('Timeout beim Verbinden mit dem Lavalink-Node'));
-      }, 15_000);
-
-      const onReady = () => {
-        clearTimeout(timeout);
-        shoukaku.off('ready', onReady);
-        resolve();
-      };
-
-      shoukaku.once('ready', onReady);
-    });
-  } catch (error) {
-    shoukaku = null;
-    shoukakuReady = false;
-    console.error('[Lavalink] ❌ Initialisierung fehlgeschlagen:', error);
-  }
-}
 
 // ==================== SETUP CHANNELS ====================
 
@@ -2666,15 +2633,23 @@ async function handleLessonHoursModal(
 client.on(
   Events.VoiceStateUpdate,
   async (oldState, newState) => {
-    const supportId = config.CHANNELS.SUPPORT_WARTERAUM;
+    const supportId =
+      config.CHANNELS
+        .SUPPORT_WARTERAUM;
 
     // Bot-eigene Voice-States ignorieren
-    if (newState.member?.user?.bot) return;
+    if (
+      newState.member?.user?.bot
+    ) {
+      return;
+    }
 
     // Jemand joined Support Warteraum
     if (
-      newState.channelId === supportId &&
-      oldState.channelId !== supportId
+      newState.channelId ===
+        supportId &&
+      oldState.channelId !==
+        supportId
     ) {
       console.log(
         `[Voice] ${newState.member?.user?.tag} joined Support Warteraum`
@@ -2682,22 +2657,37 @@ client.on(
 
       setTimeout(() => {
         joinAndPlayMusic(
-          newState.guild.channels.cache.get(supportId) || newState.channel
+          newState.guild.channels.cache.get(
+            supportId
+          ) ||
+            newState.channel
         );
       }, 800);
     }
 
     // Jemand left
     if (
-      oldState.channelId === supportId &&
-      newState.channelId !== supportId
+      oldState.channelId ===
+        supportId &&
+      newState.channelId !==
+        supportId
     ) {
       setTimeout(() => {
-        const channel = oldState.guild.channels.cache.get(supportId);
+        const channel =
+          oldState.guild.channels.cache.get(
+            supportId
+          );
+
         if (!channel) return;
 
-        const humans = channel.members.filter((m) => !m.user.bot).size;
-        console.log(`[Voice] left, humans remaining: ${humans}`);
+        const humans =
+          channel.members.filter(
+            (m) => !m.user.bot
+          ).size;
+
+        console.log(
+          `[Voice] left, humans remaining: ${humans}`
+        );
 
         if (humans === 0) {
           leaveVoice(supportId);
@@ -2708,75 +2698,77 @@ client.on(
 );
 
 async function joinAndPlayMusic(channel) {
-  if (!channel || channel.id !== config.CHANNELS.SUPPORT_WARTERAUM) return;
+  if (!channel || channel.id !== config.CHANNELS.SUPPORT_WARTERAUM) {
+    return;
+  }
 
-  if (!shoukaku || !shoukakuReady) {
+  if (!shoukaku || !lavalinkReady) {
     console.warn('[Lavalink] Noch nicht bereit – Voice-Join übersprungen.');
     return;
   }
 
+  if (!LAVALINK_MUSIC_URL) {
+    console.error(
+      '[Lavalink] LAVALINK_MUSIC_URL fehlt. Lavalink kann die lokale music.mp3 nicht aus deinem Bot-Container lesen.'
+    );
+    return;
+  }
+
   const existing = voiceConnections.get(channel.id);
-  if (existing) {
-    console.log('[Voice] Bereits mit Support Warteraum verbunden.');
+  if (existing?.player) {
+    console.log('[Voice] Bereits mit Lavalink verbunden.');
     return;
   }
 
   try {
+    console.log(`[Voice] Verbinde Lavalink mit #${channel.name}...`);
+
     const player = await shoukaku.joinVoiceChannel({
       guildId: channel.guild.id,
       channelId: channel.id,
-      shardId: 0,
+      shardId: channel.guild.shardId ?? 0,
     });
 
-    voiceConnections.set(channel.id, { player });
+    voiceConnections.set(channel.id, {
+      player,
+      guildId: channel.guild.id,
+    });
 
     player.on('start', () => {
-      console.log('[Lavalink] ▶️ Musik gestartet');
+      console.log('[Voice] ▶️ Musik gestartet.');
     });
 
-    player.on('end', async (data) => {
-      console.log(`[Lavalink] ⏹️ Track beendet (${data.reason})`);
+    player.on('end', async (event) => {
+      console.log(`[Voice] Track beendet: ${event?.reason || 'unbekannt'}`);
 
-      const currentChannel = channel.guild.channels.cache.get(channel.id);
-      const humans = currentChannel
-        ? currentChannel.members.filter((m) => !m.user.bot).size
-        : 0;
-
-      if (humans === 0) {
-        await leaveVoice(channel.id);
-        return;
+      if (event?.reason === 'finished') {
+        await playMusic(player).catch((error) => {
+          console.error('[Voice] Loop-Wiedergabe fehlgeschlagen:', error);
+        });
       }
-
-      // Track erneut laden = Loop der Warteschleifen-Musik.
-      setTimeout(() => {
-        const current = voiceConnections.get(channel.id);
-        if (current?.player === player) {
-          playMusic(player).catch((error) =>
-            console.error('[Lavalink] Loop-Fehler:', error)
-          );
-        }
-      }, 250);
     });
 
-    player.on('exception', (error) => {
-      console.error('[Lavalink] ❌ Track Exception:', error);
+    player.on('stuck', (event) => {
+      console.warn('[Voice] Lavalink Track stuck:', event);
     });
 
-    player.on('stuck', (data) => {
-      console.warn('[Lavalink] ⚠️ Track stuck:', data);
+    player.on('exception', (event) => {
+      console.error('[Voice] Lavalink Track Exception:', event);
     });
 
-    player.on('closed', (data) => {
-      console.warn('[Lavalink] ⚠️ Player-WebSocket geschlossen:', data);
+    player.on('closed', (event) => {
+      console.warn('[Voice] Lavalink Player-WebSocket geschlossen:', event);
     });
 
     await player.setGlobalVolume(45);
     await playMusic(player);
 
-    console.log('[Voice] ✅ Lavalink Player verbunden und Musik gestartet');
+    console.log('[Voice] ✅ Lavalink Player läuft.');
   } catch (error) {
+    console.error('[Voice] ❌ Lavalink Voice-Join fehlgeschlagen:', error);
     voiceConnections.delete(channel.id);
-    console.error('[Voice] ❌ Lavalink join/play error:', error);
+
+    await shoukaku.leaveVoiceChannel(channel.guild.id).catch(() => {});
   }
 }
 
@@ -2784,27 +2776,33 @@ async function joinAndPlayMusic(channel) {
 
 async function playMusic(player) {
   if (!LAVALINK_MUSIC_URL) {
-    console.error('[Lavalink] LAVALINK_MUSIC_URL fehlt.');
-    return;
+    throw new Error('LAVALINK_MUSIC_URL fehlt');
   }
 
-  try {
-    console.log(`[Lavalink] Lade Musik: ${LAVALINK_MUSIC_URL}`);
+  console.log('[Lavalink] Löse Musik-URL auf...');
 
-    // Eine direkte HTTPS-URL wird von Lavalink als HTTP-Track aufgelöst.
-    const result = await player.node.rest.resolve(LAVALINK_MUSIC_URL);
-    const track = result?.tracks?.[0];
+  const result = await player.node.rest.resolve(LAVALINK_MUSIC_URL);
 
-    if (!track?.encoded) {
-      throw new Error(
-        'Lavalink konnte die Musik-URL nicht als Track auflösen. Stelle sicher, dass der HTTP-Source auf dem Node aktiviert ist.'
-      );
-    }
-
-    await player.playTrack({ track: { encoded: track.encoded } });
-  } catch (error) {
-    console.error('[Lavalink] ❌ playMusic ERROR:', error);
+  if (!result?.tracks?.length) {
+    throw new Error(
+      'Lavalink konnte LAVALINK_MUSIC_URL nicht als Track auflösen.'
+    );
   }
+
+  const track = result.tracks[0];
+  const encoded = track.encoded;
+
+  if (!encoded) {
+    throw new Error('Lavalink hat keinen encoded Track zurückgegeben.');
+  }
+
+  await player.playTrack({
+    track: { encoded },
+  });
+
+  console.log(
+    `[Lavalink] ▶️ ${track.info?.title || 'Musik'} gestartet.`
+  );
 }
 
 // ==================== LEAVE VOICE ====================
@@ -2813,17 +2811,20 @@ async function leaveVoice(channelId) {
   const entry = voiceConnections.get(channelId);
   if (!entry) return;
 
-  try {
-    await entry.player.stopTrack();
-  } catch {}
+  voiceConnections.delete(channelId);
 
   try {
-    await shoukaku?.leaveVoiceChannel(entry.player.guildId);
+    if (entry.player) {
+      await entry.player.stopTrack().catch(() => {});
+    }
+
+    if (shoukaku) {
+      await shoukaku.leaveVoiceChannel(entry.guildId).catch(() => {});
+    }
   } catch (error) {
-    console.warn('[Lavalink] Leave-Fehler:', error.message);
+    console.warn('[Voice] Fehler beim Verlassen:', error?.message || error);
   }
 
-  voiceConnections.delete(channelId);
   console.log('[Voice] Left Support Warteraum');
 }
 
@@ -2843,6 +2844,6 @@ process.on(
     )
 );
 
-client.login(
-  process.env.DISCORD_TOKEN
-);
+initLavalink().finally(() => {
+  client.login(process.env.DISCORD_TOKEN);
+});
