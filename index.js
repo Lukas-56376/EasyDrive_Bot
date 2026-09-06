@@ -67,12 +67,23 @@ const client = new Client({
 let shoukaku = null;
 let lavalinkReady = false;
 
-const LAVALINK_NODE = {
-  name: process.env.LAVALINK_NAME || 'Serenetia-SSL',
-  url: process.env.LAVALINK_HOST || 'lavalinkv4.serenetia.com:443',
-  auth: process.env.LAVALINK_PASSWORD || 'https://seretia.link/discord',
-  secure: true,
-};
+const LAVALINK_NODES = [
+  {
+    name: process.env.LAVALINK_NAME || 'Serenetia-SSL',
+    url: process.env.LAVALINK_HOST || 'lavalinkv4.serenetia.com:443',
+    auth: process.env.LAVALINK_PASSWORD || 'https://seretia.link/discord',
+    secure: true,
+  },
+  {
+    // Fallback: Der primäre Free-Node liefert regelmäßig 429 bzw. kappt die
+    // Verbindung direkt nach dem Handshake wieder. Shoukaku verbindet zu allen
+    // Nodes im Array und nutzt automatisch den, der tatsächlich erreichbar ist.
+    name: process.env.LAVALINK_FALLBACK_NAME || 'Jirayu-Fallback',
+    url: process.env.LAVALINK_FALLBACK_HOST || 'lavalink.jirayu.net:443',
+    auth: process.env.LAVALINK_FALLBACK_PASSWORD || 'youshallnotpass',
+    secure: true,
+  },
+];
 
 const LAVALINK_MUSIC_URL = process.env.LAVALINK_MUSIC_URL || '';
 
@@ -84,7 +95,7 @@ async function initLavalink() {
 
     shoukaku = new Shoukaku(
       new Connectors.DiscordJS(client),
-      [LAVALINK_NODE],
+      LAVALINK_NODES,
       {
         // Öffentliche Nodes können bei zu vielen Handshakes 429 liefern.
         // Deshalb begrenzt reconnecten statt in einer Schleife zu hämmern,
@@ -149,7 +160,7 @@ async function initLavalink() {
     });
 
     console.log(
-      `[Lavalink] Verbinde SSL zu ${LAVALINK_NODE.url} (Handshake erfolgt sobald Discord-Login abgeschlossen ist)`
+      `[Lavalink] Verbinde zu ${LAVALINK_NODES.map((n) => n.url).join(', ')} (Handshake erfolgt sobald Discord-Login abgeschlossen ist)`
     );
   } catch (error) {
     console.error('[Lavalink] ❌ Initialisierung fehlgeschlagen:', error);
